@@ -234,12 +234,12 @@ docker-compose logs minio
 
 ## 👥 Equipe
 
-- [Thiago von Sohsten] (@thiagovonsohsten)
-- [Nome do membro 2] (@github_user2)
-- [Nome do membro 3] (@github_user3)
-- [Nome do membro 4] (@github_user4)
-- [Nome do membro 5] (@github_user5)
-- [Nome do membro 6] (@github_user6)
+- Thiago von Sohsten (@thiagovonsohsten)
+- Enzo Nunes (@ebn0511)
+- Felipe Sérgio (@felipesergiob)
+- Thiago Belo (@thiagombelo)
+- Sérgio Mariano (@sergiogmariano)
+
 
 ## 📄 Licença
 
