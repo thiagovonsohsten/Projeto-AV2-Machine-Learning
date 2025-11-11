@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+
+# Dados sensíveis
+.env
+*.env
+
+# Relatórios temporários
+reports/*.png
+reports/*.pdf
+!reports/.gitkeep
+
+# MLFlow
+mlruns/
+mlflow_data/
+
+# Jupyter
+jupyter_data/
+
+# PostgreSQL
+postgres_data/
+
+# MinIO
+minio_data/
+

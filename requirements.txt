@@ -1,0 +1,3 @@
+# Dependências para scripts auxiliares
+requests==2.31.0
+
