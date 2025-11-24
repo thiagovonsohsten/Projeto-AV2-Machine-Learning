@@ -218,3 +218,82 @@ async def get_data_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao obter estatísticas: {str(e)}")
 
+
+@app.get("/dashboard/metrics")
+async def get_dashboard_metrics():
+    """Retorna métricas dos modelos para o dashboard"""
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text("""
+                SELECT 
+                    model_name,
+                    accuracy,
+                    f1_score_weighted,
+                    f1_score_macro,
+                    precision_n,
+                    precision_p,
+                    precision_y,
+                    recall_n,
+                    recall_p,
+                    recall_y
+                FROM model_metrics
+                ORDER BY accuracy DESC
+            """))
+            
+            metrics = []
+            for row in result:
+                metrics.append({
+                    "model_name": row[0],
+                    "accuracy": float(row[1]),
+                    "f1_score_weighted": float(row[2]),
+                    "f1_score_macro": float(row[3]),
+                    "precision": {
+                        "N": float(row[4]) if row[4] else 0.0,
+                        "P": float(row[5]) if row[5] else 0.0,
+                        "Y": float(row[6]) if row[6] else 0.0
+                    },
+                    "recall": {
+                        "N": float(row[7]) if row[7] else 0.0,
+                        "P": float(row[8]) if row[8] else 0.0,
+                        "Y": float(row[9]) if row[9] else 0.0
+                    }
+                })
+            
+            return {"metrics": metrics}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao obter métricas: {str(e)}")
+
+
+@app.get("/dashboard/predictions")
+async def get_dashboard_predictions(limit: int = 100):
+    """Retorna predições recentes para o dashboard"""
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text("""
+                SELECT 
+                    record_id,
+                    predicted_class,
+                    confidence_score,
+                    model_name,
+                    created_at
+                FROM model_predictions
+                ORDER BY created_at DESC
+                LIMIT :limit
+            """), {"limit": limit})
+            
+            predictions = []
+            for row in result:
+                predictions.append({
+                    "record_id": int(row[0]),
+                    "predicted_class": row[1],
+                    "confidence_score": float(row[2]),
+                    "model_name": row[3],
+                    "created_at": str(row[4])
+                })
+            
+            return {"predictions": predictions}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao obter predições: {str(e)}")
+

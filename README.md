@@ -30,7 +30,8 @@ O projeto implementa a seguinte arquitetura:
 - **PostgreSQL** (Porta 5432): Banco de dados relacional para dados estruturados
 - **JupyterLab** (Porta 8888): Ambiente de análise e modelagem
 - **MLFlow** (Porta 5000): Rastreamento de experimentos e versionamento de modelos
-- **Visualização**: Gráficos gerados nos notebooks e MLFlow UI
+- **ThingsBoard** (Porta 8080): Dashboard de visualização (IoT platform)
+- **Dashboard Streamlit** (Porta 8501): Dashboard interativo para visualização de resultados
 
 ## 📁 Estrutura do Projeto
 
@@ -47,7 +48,13 @@ O projeto implementa a seguinte arquitetura:
 ├── mlflow/                     # Configuração MLFlow
 ├── notebooks/                  # Notebooks de análise e modelagem
 │   ├── 01_exploratory_data_analysis.ipynb
-│   └── 02_preprocessing_and_modeling.ipynb
+│   ├── 02_preprocessing_and_modeling.ipynb
+│   ├── 03_hyperparameter_tuning.ipynb
+│   └── 04_export_to_dashboard.ipynb
+├── dashboard/                  # Dashboard Streamlit
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app.py
 ├── trendz/                     # Dashboards exportados
 ├── reports/                    # Figuras e plots dos resultados
 ├── Dataset of Diabetes .csv    # Dataset original
@@ -61,7 +68,8 @@ O projeto implementa a seguinte arquitetura:
 - Docker Desktop instalado e rodando
 - Docker Compose v2.0+
 - 8GB+ de RAM disponível
-- Portas 8000, 5000, 5432, 8888, 9000, 9001, 8080 disponíveis
+- Portas 8000, 5000, 5433, 8080, 8501, 8888, 9000, 9001 disponíveis
+- ⚠️ Nota: A porta 5432 pode estar em uso por PostgreSQL local, então usamos 5433 externamente
 
 ### Passo 1: Clonar o Repositório
 
@@ -119,15 +127,30 @@ Acesse `http://localhost:8000/docs` e use a interface Swagger para fazer upload.
 - **FastAPI Docs**: http://localhost:8000/docs
 - **JupyterLab**: http://localhost:8888
 - **MLFlow**: http://localhost:5000
+- **Dashboard Streamlit**: http://localhost:8501 ⭐ **Dashboard Principal**
+- **ThingsBoard**: http://localhost:8080 (usuário: tenant@thingsboard.org, senha: tenant)
 - **MinIO Console**: http://localhost:9001 (usuário: minioadmin, senha: minioadmin)
+
+> **Nota**: O Dashboard Streamlit é mais rápido e já está totalmente funcional. O ThingsBoard pode demorar alguns minutos para iniciar.
 
 ### Passo 6: Executar Análise
 
 1. Acesse o JupyterLab em http://localhost:8888
-2. Abra o notebook `notebooks/01_exploratory_data_analysis.ipynb`
-3. Execute todas as células para análise exploratória
-4. Abra o notebook `notebooks/02_preprocessing_and_modeling.ipynb`
-5. Execute para treinar os modelos
+2. Execute os notebooks na seguinte ordem:
+   - `01_exploratory_data_analysis.ipynb` - Análise exploratória
+   - `02_preprocessing_and_modeling.ipynb` - Treinamento de modelos
+   - `03_hyperparameter_tuning.ipynb` - Ajuste de hiperparâmetros (opcional)
+   - `04_export_to_dashboard.ipynb` - Exportar dados para dashboard
+
+### Passo 7: Visualizar no Dashboard
+
+1. Execute o notebook `04_export_to_dashboard.ipynb` para exportar dados
+2. Acesse o Dashboard Streamlit em http://localhost:8501
+3. Navegue pelas páginas:
+   - **Visão Geral**: Estatísticas do dataset
+   - **Análise de Dados**: Visualizações interativas
+   - **Modelos ML**: Comparação de modelos
+   - **Métricas e Resultados**: Análise detalhada
 
 ## 📊 Dataset
 
@@ -140,20 +163,32 @@ O dataset contém:
 
 O projeto implementa e compara os seguintes algoritmos de classificação:
 
-1. **Random Forest**
-2. **Gradient Boosting**
+1. **Random Forest** (com ajuste de hiperparâmetros)
+2. **Gradient Boosting** (com ajuste de hiperparâmetros)
 3. **Support Vector Machine (SVM)**
 4. **Logistic Regression**
 5. **K-Nearest Neighbors (KNN)**
+
+### Melhorias Implementadas:
+
+- ✅ **Ajuste de Hiperparâmetros**: GridSearchCV para otimização
+- ✅ **Validação Cruzada**: 5-fold cross-validation
+- ✅ **Balanceamento**: SMOTE para lidar com classes desbalanceadas
+- ✅ **Normalização**: StandardScaler para padronização
+- ✅ **Registro Completo**: Todos os experimentos no MLFlow
+- ✅ **Dashboard Interativo**: Visualização de resultados em tempo real
 
 Todos os experimentos são registrados no MLFlow para comparação e versionamento.
 
 ## 📈 Métricas de Avaliação
 
-- Accuracy (Acurácia)
-- F1-Score (ponderado)
-- Classification Report
-- Confusion Matrix
+- **Accuracy** (Acurácia)
+- **F1-Score** (ponderado e macro)
+- **Precision e Recall** por classe
+- **Classification Report** completo
+- **Confusion Matrix** (numérica e normalizada)
+- **Validação Cruzada** (5-fold)
+- **Feature Importance** (para modelos baseados em árvore)
 
 ## 🛠️ Comandos Úteis
 
@@ -189,11 +224,16 @@ docker-compose exec postgres psql -U postgres -d diabetes_db
 
 Além de reproduzir o artigo original, foram implementadas as seguintes melhorias:
 
-1. **Balanceamento de dados**: Uso de SMOTE para lidar com desbalanceamento de classes
+1. **Balanceamento de dados**: SMOTE para lidar com desbalanceamento de classes
 2. **Normalização**: StandardScaler para padronizar features
-3. **Validação cruzada**: Para avaliação mais robusta
-4. **MLFlow**: Rastreamento completo de experimentos
-5. **Pipeline automatizado**: Integração completa entre componentes
+3. **Ajuste de Hiperparâmetros**: GridSearchCV com validação cruzada
+4. **Validação Cruzada**: 5-fold CV para avaliação robusta
+5. **MLFlow**: Rastreamento completo de experimentos e versionamento
+6. **Dashboard Interativo**: Streamlit para visualização de resultados
+7. **ThingsBoard**: Dashboard IoT para monitoramento (opcional)
+8. **Pipeline Automatizado**: Integração completa entre componentes
+9. **Exportação Automática**: Métricas e resultados salvos no banco
+10. **API REST**: Endpoints para acesso aos dados e métricas
 
 ## 🐛 Troubleshooting
 

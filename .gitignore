@@ -31,7 +31,7 @@ Thumbs.db
 .env
 *.env
 
-# Relatórios temporários
+# Relatórios temporários (manter estrutura)
 reports/*.png
 reports/*.pdf
 !reports/.gitkeep
@@ -49,3 +49,8 @@ postgres_data/
 # MinIO
 minio_data/
 
+# ThingsBoard
+thingsboard_data/
+
+# Dashboard cache
+dashboard/__pycache__/
