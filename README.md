@@ -27,11 +27,14 @@ O projeto implementa a seguinte arquitetura:
 
 - **FastAPI** (Porta 8000): API REST para ingestão de dados CSV/JSON
 - **MinIO** (Portas 9000/9001): Armazenamento de objetos compatível com S3
-- **PostgreSQL** (Porta 5432): Banco de dados relacional para dados estruturados
-- **JupyterLab** (Porta 8888): Ambiente de análise e modelagem
+- **PostgreSQL** (Porta 5433 externa): Banco de dados relacional para dados estruturados
+- **JupyterLab** (Porta 8889): Ambiente de análise e modelagem
 - **MLFlow** (Porta 5000): Rastreamento de experimentos e versionamento de modelos
-- **ThingsBoard** (Porta 8080): Dashboard de visualização (IoT platform)
-- **Dashboard Streamlit** (Porta 8501): Dashboard interativo para visualização de resultados
+- **ThingsBoard** (Porta 8080): Dashboard de visualização IoT com dashboards interativos
+  - Integração automática via `thingsboard_integration` (sincroniza dados a cada 5 minutos)
+  - Exibe métricas, predições e estatísticas em tempo real
+- **Trendz Analytics** (Porta 8888): Dashboard de visualização Streamlit - conforme especificação
+- **Dashboard Streamlit** (Porta 8501): Dashboard interativo adicional
 
 ## 📁 Estrutura do Projeto
 
@@ -55,7 +58,14 @@ O projeto implementa a seguinte arquitetura:
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── app.py
-├── trendz/                     # Dashboards exportados
+├── trendz/                     # Trendz Analytics (Dashboard Streamlit)
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app.py
+├── thingsboard/                # Integração ThingsBoard
+│   ├── integrate_to_thingsboard.py
+│   ├── GUIA_DASHBOARD_THINGSBOARD.md
+│   └── requirements.txt
 ├── reports/                    # Figuras e plots dos resultados
 ├── Dataset of Diabetes .csv    # Dataset original
 └── README.md                   # Este arquivo
@@ -68,7 +78,7 @@ O projeto implementa a seguinte arquitetura:
 - Docker Desktop instalado e rodando
 - Docker Compose v2.0+
 - 8GB+ de RAM disponível
-- Portas 8000, 5000, 5433, 8080, 8501, 8888, 9000, 9001 disponíveis
+- Portas 8000, 5000, 5433, 8080, 8501, 8888, 8889, 9000, 9001 disponíveis
 - ⚠️ Nota: A porta 5432 pode estar em uso por PostgreSQL local, então usamos 5433 externamente
 
 ### Passo 1: Clonar o Repositório
@@ -125,25 +135,49 @@ Acesse `http://localhost:8000/docs` e use a interface Swagger para fazer upload.
 
 - **FastAPI**: http://localhost:8000
 - **FastAPI Docs**: http://localhost:8000/docs
-- **JupyterLab**: http://localhost:8888
+- **JupyterLab**: http://localhost:8889 ⭐ (mudado para liberar 8888 para Trendz)
 - **MLFlow**: http://localhost:5000
-- **Dashboard Streamlit**: http://localhost:8501 ⭐ **Dashboard Principal**
-- **ThingsBoard**: http://localhost:8080 (usuário: tenant@thingsboard.org, senha: tenant)
+- **Trendz Analytics**: http://localhost:8888 ⭐ **Dashboard Principal (conforme especificação)**
+- **ThingsBoard**: http://localhost:8080 ⭐ **Dashboard Principal (conforme especificação)**
+  - Credenciais: `sysadmin@thingsboard.org` / `sysadmin`
+- **Dashboard Streamlit**: http://localhost:8501 (dashboard adicional)
 - **MinIO Console**: http://localhost:9001 (usuário: minioadmin, senha: minioadmin)
 
-> **Nota**: O Dashboard Streamlit é mais rápido e já está totalmente funcional. O ThingsBoard pode demorar alguns minutos para iniciar.
+> **Nota**: Ambos os dashboards (ThingsBoard e Trendz Analytics) estão funcionando conforme especificação. O Trendz Analytics já está exibindo dados automaticamente.
 
 ### Passo 6: Executar Análise
 
-1. Acesse o JupyterLab em http://localhost:8888
+1. Acesse o JupyterLab em http://localhost:8889
 2. Execute os notebooks na seguinte ordem:
    - `01_exploratory_data_analysis.ipynb` - Análise exploratória
    - `02_preprocessing_and_modeling.ipynb` - Treinamento de modelos
    - `03_hyperparameter_tuning.ipynb` - Ajuste de hiperparâmetros (opcional)
    - `04_export_to_dashboard.ipynb` - Exportar dados para dashboard
 
-### Passo 7: Visualizar no Dashboard
+### Passo 7: Visualizar nos Dashboards
 
+#### Opção 1: Trendz Analytics (Automático)
+1. Execute o notebook `04_export_to_dashboard.ipynb` para exportar dados
+2. Acesse o Trendz Analytics em http://localhost:8888
+3. Visualize automaticamente:
+   - Estatísticas do dataset
+   - Métricas dos modelos
+   - Predições e distribuições
+
+#### Opção 2: ThingsBoard (Requer Configuração)
+1. Execute o notebook `04_export_to_dashboard.ipynb` para exportar dados
+2. Aguarde a sincronização automática (ou execute manualmente):
+   ```bash
+   docker-compose restart thingsboard_integration
+   ```
+3. Acesse o ThingsBoard em http://localhost:8080
+4. Siga o guia em `thingsboard/GUIA_DASHBOARD_THINGSBOARD.md` para:
+   - Verificar dispositivos criados
+   - Criar dashboard
+   - Adicionar widgets interativos
+   - Configurar visualizações
+
+#### Opção 3: Dashboard Streamlit (Alternativo)
 1. Execute o notebook `04_export_to_dashboard.ipynb` para exportar dados
 2. Acesse o Dashboard Streamlit em http://localhost:8501
 3. Navegue pelas páginas:
