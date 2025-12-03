@@ -4,16 +4,16 @@
 
 Este projeto implementa um pipeline completo de Machine Learning para classificação de diabetes, reproduzindo e melhorando o artigo científico **"Comparative Effectiveness of Classification Algorithms in Predicting Diabetes"**.
 
-O projeto utiliza uma arquitetura baseada em contêineres Docker, integrando coleta, processamento, modelagem e visualização de dados.
+O projeto utiliza uma arquitetura baseada em contêineres Docker, integrando coleta, processamento, modelagem e visualização de dados conforme especificação da disciplina.
 
 ## 🏗️ Arquitetura
 
-O projeto implementa a seguinte arquitetura:
+O projeto implementa a arquitetura integrada conforme Figura 1:
 
 ```
 ┌─────────┐     ┌─────────┐     ┌──────────┐     ┌──────────┐
 │ FastAPI │────▶│  MinIO  │────▶│PostgreSQL│────▶│JupyterLab│
-│ (8000)  │     │ (9000)  │     │  (5432)  │     │  (8888)  │
+│ (8000)  │     │ (9000)  │     │  (5433)  │     │  (8889)  │
 └─────────┘     └─────────┘     └──────────┘     └──────────┘
                                                          │
                                                          ▼
@@ -21,20 +21,22 @@ O projeto implementa a seguinte arquitetura:
                                                 │  MLFlow  │
                                                 │  (5000)  │
                                                 └──────────┘
+                                                         │
+                                                         ▼
+                                                ┌──────────┐
+                                                │Dashboard │
+                                                │ (8501)   │
+                                                └──────────┘
 ```
 
 ### Componentes
 
-- **FastAPI** (Porta 8000): API REST para ingestão de dados CSV/JSON
-- **MinIO** (Portas 9000/9001): Armazenamento de objetos compatível com S3
-- **PostgreSQL** (Porta 5433 externa): Banco de dados relacional para dados estruturados
-- **JupyterLab** (Porta 8889): Ambiente de análise e modelagem
-- **MLFlow** (Porta 5000): Rastreamento de experimentos e versionamento de modelos
-- **ThingsBoard** (Porta 8080): Dashboard de visualização IoT com dashboards interativos
-  - Integração automática via `thingsboard_integration` (sincroniza dados a cada 5 minutos)
-  - Exibe métricas, predições e estatísticas em tempo real
-- **Trendz Analytics** (Porta 8888): Dashboard de visualização Streamlit - conforme especificação
-- **Dashboard Streamlit** (Porta 8501): Dashboard interativo adicional
+- **FastAPI** (Porta 8000): Interface de ingestão dos dados (CSV/JSON) e integração com S3
+- **MinIO** (Portas 9000/9001): Armazenamento de dados brutos e modelos (S3-compatible)
+- **PostgreSQL** (Porta 5433 externa): Estruturação de dados tratados
+- **JupyterLab** (Porta 8889): Ambiente de análise, limpeza e modelagem preditiva
+- **MLFlow** (Porta 5000): Registro e versionamento dos modelos de ML
+- **Dashboard Streamlit** (Porta 8501): Visualização dos dados e dashboards interativos
 
 ## 📁 Estrutura do Projeto
 
@@ -42,14 +44,15 @@ O projeto implementa a seguinte arquitetura:
 /
 ├── docker-compose.yml          # Orquestração dos contêineres
 ├── init_db.sql                 # Script de inicialização do banco
-├── fastapi/                    # API de ingestão
+├── fastapi/                    # Camada de ingestão (API)
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── main.py
-├── jupyterlab/                 # Ambiente de análise
+├── jupyterlab/                 # Ambiente de análise e exploração
 │   └── Dockerfile
-├── mlflow/                     # Configuração MLFlow
-├── notebooks/                  # Notebooks de análise e modelagem
+├── mlflow/                     # Configuração e armazenamento de experimentos
+│   └── Dockerfile
+├── notebooks/                   # Notebooks de tratamento, visualização e modelagem
 │   ├── 01_exploratory_data_analysis.ipynb
 │   ├── 02_preprocessing_and_modeling.ipynb
 │   ├── 03_hyperparameter_tuning.ipynb
@@ -58,17 +61,10 @@ O projeto implementa a seguinte arquitetura:
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── app.py
-├── trendz/                     # Trendz Analytics (Dashboard Streamlit)
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app.py
-├── thingsboard/                # Integração ThingsBoard
-│   ├── integrate_to_thingsboard.py
-│   ├── GUIA_DASHBOARD_THINGSBOARD.md
-│   └── requirements.txt
-├── reports/                    # Figuras e plots dos resultados
+├── reports/                    # Figuras com os plots dos resultados
 ├── Dataset of Diabetes .csv    # Dataset original
-└── README.md                   # Este arquivo
+├── README.md                   # Descrição do projeto
+└── LICENSE                     # Licença
 ```
 
 ## 🚀 Como Executar
@@ -78,8 +74,7 @@ O projeto implementa a seguinte arquitetura:
 - Docker Desktop instalado e rodando
 - Docker Compose v2.0+
 - 8GB+ de RAM disponível
-- Portas 8000, 5000, 5433, 8080, 8501, 8888, 8889, 9000, 9001 disponíveis
-- ⚠️ Nota: A porta 5432 pode estar em uso por PostgreSQL local, então usamos 5433 externamente
+- Portas 8000, 5000, 5433, 8501, 8889, 9000, 9001 disponíveis
 
 ### Passo 1: Clonar o Repositório
 
@@ -110,13 +105,10 @@ Todos os serviços devem estar com status "Up" e "healthy".
 
 ### Passo 4: Upload do Dataset
 
-#### Opção 1: Script Python (Mais Fácil)
+#### Opção 1: Script Python
 
 ```bash
-# Instalar dependências (se necessário)
 pip install requests
-
-# Executar script de upload
 python upload_dataset.py
 ```
 
@@ -129,21 +121,16 @@ curl -X POST "http://localhost:8000/upload" \
 
 #### Opção 3: Via Interface Web
 
-Acesse `http://localhost:8000/docs` e use a interface Swagger para fazer upload.
+Acesse `http://localhost:8000/docs` e use a interface Swagger.
 
 ### Passo 5: Acessar os Serviços
 
 - **FastAPI**: http://localhost:8000
 - **FastAPI Docs**: http://localhost:8000/docs
-- **JupyterLab**: http://localhost:8889 ⭐ (mudado para liberar 8888 para Trendz)
+- **JupyterLab**: http://localhost:8889
 - **MLFlow**: http://localhost:5000
-- **Trendz Analytics**: http://localhost:8888 ⭐ **Dashboard Principal (conforme especificação)**
-- **ThingsBoard**: http://localhost:8080 ⭐ **Dashboard Principal (conforme especificação)**
-  - Credenciais: `sysadmin@thingsboard.org` / `sysadmin`
-- **Dashboard Streamlit**: http://localhost:8501 (dashboard adicional)
+- **Dashboard Streamlit**: http://localhost:8501
 - **MinIO Console**: http://localhost:9001 (usuário: minioadmin, senha: minioadmin)
-
-> **Nota**: Ambos os dashboards (ThingsBoard e Trendz Analytics) estão funcionando conforme especificação. O Trendz Analytics já está exibindo dados automaticamente.
 
 ### Passo 6: Executar Análise
 
@@ -151,33 +138,11 @@ Acesse `http://localhost:8000/docs` e use a interface Swagger para fazer upload.
 2. Execute os notebooks na seguinte ordem:
    - `01_exploratory_data_analysis.ipynb` - Análise exploratória
    - `02_preprocessing_and_modeling.ipynb` - Treinamento de modelos
-   - `03_hyperparameter_tuning.ipynb` - Ajuste de hiperparâmetros (opcional)
+   - `03_hyperparameter_tuning.ipynb` - Ajuste de hiperparâmetros
    - `04_export_to_dashboard.ipynb` - Exportar dados para dashboard
 
-### Passo 7: Visualizar nos Dashboards
+### Passo 7: Visualizar no Dashboard
 
-#### Opção 1: Trendz Analytics (Automático)
-1. Execute o notebook `04_export_to_dashboard.ipynb` para exportar dados
-2. Acesse o Trendz Analytics em http://localhost:8888
-3. Visualize automaticamente:
-   - Estatísticas do dataset
-   - Métricas dos modelos
-   - Predições e distribuições
-
-#### Opção 2: ThingsBoard (Requer Configuração)
-1. Execute o notebook `04_export_to_dashboard.ipynb` para exportar dados
-2. Aguarde a sincronização automática (ou execute manualmente):
-   ```bash
-   docker-compose restart thingsboard_integration
-   ```
-3. Acesse o ThingsBoard em http://localhost:8080
-4. Siga o guia em `thingsboard/GUIA_DASHBOARD_THINGSBOARD.md` para:
-   - Verificar dispositivos criados
-   - Criar dashboard
-   - Adicionar widgets interativos
-   - Configurar visualizações
-
-#### Opção 3: Dashboard Streamlit (Alternativo)
 1. Execute o notebook `04_export_to_dashboard.ipynb` para exportar dados
 2. Acesse o Dashboard Streamlit em http://localhost:8501
 3. Navegue pelas páginas:
@@ -189,7 +154,7 @@ Acesse `http://localhost:8000/docs` e use a interface Swagger para fazer upload.
 ## 📊 Dataset
 
 O dataset contém:
-- **1001 registros** de pacientes
+- **5000+ registros** de pacientes
 - **13 features**: ID, No_Pation, Gender, AGE, Urea, Cr, HbA1c, Chol, TG, HDL, LDL, VLDL, BMI
 - **Classe alvo**: CLASS (N=Non-diabetic, P=Prediabetic, Y=Diabetic)
 
@@ -211,8 +176,6 @@ O projeto implementa e compara os seguintes algoritmos de classificação:
 - ✅ **Normalização**: StandardScaler para padronização
 - ✅ **Registro Completo**: Todos os experimentos no MLFlow
 - ✅ **Dashboard Interativo**: Visualização de resultados em tempo real
-
-Todos os experimentos são registrados no MLFlow para comparação e versionamento.
 
 ## 📈 Métricas de Avaliação
 
@@ -248,26 +211,13 @@ docker-compose logs -f mlflow
 docker-compose restart fastapi
 ```
 
-### Acessar shell de um contêiner
-```bash
-docker-compose exec jupyterlab bash
-docker-compose exec postgres psql -U postgres -d diabetes_db
-```
+## 📝 Fluxo Geral
 
-## 📝 Melhorias Implementadas
-
-Além de reproduzir o artigo original, foram implementadas as seguintes melhorias:
-
-1. **Balanceamento de dados**: SMOTE para lidar com desbalanceamento de classes
-2. **Normalização**: StandardScaler para padronizar features
-3. **Ajuste de Hiperparâmetros**: GridSearchCV com validação cruzada
-4. **Validação Cruzada**: 5-fold CV para avaliação robusta
-5. **MLFlow**: Rastreamento completo de experimentos e versionamento
-6. **Dashboard Interativo**: Streamlit para visualização de resultados
-7. **ThingsBoard**: Dashboard IoT para monitoramento (opcional)
-8. **Pipeline Automatizado**: Integração completa entre componentes
-9. **Exportação Automática**: Métricas e resultados salvos no banco
-10. **API REST**: Endpoints para acesso aos dados e métricas
+1. **FastAPI** recebe e armazena os dados no S3/MinIO
+2. Os dados são estruturados em PostgreSQL
+3. **Jupyter Notebook** lê da base estruturada, trata e treina um modelo
+4. O modelo é versionado no **MLFlow** e exportado novamente para o S3
+5. O **Dashboard** consome os dados e mostra visualizações e insights
 
 ## 🐛 Troubleshooting
 
@@ -289,15 +239,6 @@ docker-compose build --no-cache
 docker-compose up -d
 ```
 
-### Erro: MinIO não conecta
-```bash
-# Verificar se o MinIO está saudável
-docker-compose ps minio
-
-# Verificar logs
-docker-compose logs minio
-```
-
 ## 📚 Referências
 
 - Artigo original: "Comparative Effectiveness of Classification Algorithms in Predicting Diabetes"
@@ -313,7 +254,6 @@ docker-compose logs minio
 - Felipe Sérgio (@felipesergiob)
 - Thiago Belo (@thiagombelo)
 - Sérgio Mariano (@sergiogmariano)
-
 
 ## 📄 Licença
 

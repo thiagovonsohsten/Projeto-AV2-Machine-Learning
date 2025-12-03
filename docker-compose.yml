@@ -31,7 +31,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init_db.sql:/docker-entrypoint-initdb.d/01_init_db.sql
-      - ./create_thingsboard_db.sh:/docker-entrypoint-initdb.d/02_create_thingsboard_db.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -73,7 +72,7 @@ services:
       dockerfile: Dockerfile
     container_name: jupyterlab
     ports:
-      - "8889:8888"  # Mudado para 8889 para liberar 8888 para Trendz
+      - "8889:8888"
     environment:
       JUPYTER_ENABLE_LAB: "yes"
       MINIO_ENDPOINT: minio:9000
@@ -123,82 +122,7 @@ services:
         condition: service_healthy
     command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri postgresql://postgres:postgres@postgres:5432/diabetes_db --default-artifact-root s3://mlflow-artifacts/
 
-  # ThingsBoard - Dashboard de visualização (porta 8080)
-  thingsboard:
-    image: thingsboard/tb:latest
-    container_name: thingsboard
-    ports:
-      - "8080:9090"
-    environment:
-      TB_QUEUE_TYPE: in-memory
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/thingsboard_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
-      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
-      SPRING_DATASOURCE_TYPE: com.zaxxer.hikari.HikariDataSource
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      TB_SERVICE_TYPE: monolith
-    volumes:
-      - thingsboard_data:/data
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9090/api/auth/login || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 180s  # Tempo suficiente para inicialização completa
-
-  # Integração ThingsBoard - Sincroniza dados do PostgreSQL para ThingsBoard
-  thingsboard_integration:
-    build:
-      context: ./thingsboard
-      dockerfile: Dockerfile
-    container_name: thingsboard_integration
-    environment:
-      THINGSBOARD_URL: http://thingsboard:9090
-      THINGSBOARD_USERNAME: admin@diabetes-ml.com
-      THINGSBOARD_PASSWORD: admin123
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: diabetes_db
-    depends_on:
-      thingsboard:
-        condition: service_started
-      postgres:
-        condition: service_healthy
-    restart: on-failure
-    # Executa a cada 5 minutos (aguarda ThingsBoard estar pronto - pode demorar até 3 minutos)
-    command: sh -c "echo 'Aguardando ThingsBoard estar pronto (pode demorar até 3 minutos)...' && sleep 180 && while true; do python integrate_to_thingsboard.py; sleep 300; done"
-
-  # Trendz Analytics - Dashboard de visualização (porta 8888 conforme especificação)
-  trendz:
-    build:
-      context: ./trendz
-      dockerfile: Dockerfile
-    container_name: trendz_analytics
-    ports:
-      - "8888:8888"
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: diabetes_db
-      MLFLOW_TRACKING_URI: http://mlflow:5000
-    volumes:
-      - ./trendz:/app
-      - ./reports:/app/reports
-    depends_on:
-      - postgres
-      - mlflow
-    command: streamlit run app.py --server.port=8888 --server.address=0.0.0.0
-
-  # Dashboard alternativo (Streamlit) - Mais leve e fácil de usar
+  # Dashboard Streamlit - Visualização de dados e resultados
   dashboard:
     build:
       context: ./dashboard
@@ -226,7 +150,6 @@ volumes:
   postgres_data:
   jupyter_data:
   mlflow_data:
-  thingsboard_data:
 
 networks:
   default:

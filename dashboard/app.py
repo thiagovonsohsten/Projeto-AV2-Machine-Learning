@@ -324,8 +324,21 @@ elif page == "📉 Métricas e Resultados":
             
             # Predições recentes
             st.subheader("Predições Recentes")
-            pred_query = f"SELECT * FROM model_predictions WHERE model_name = '{selected_model}' ORDER BY created_at DESC LIMIT 100"
-            predictions_df = pd.read_sql(pred_query, engine)
+            # Buscar predições - primeiro tenta nome exato, depois busca por nome base (ex: "Gradient Boosting" vs "Gradient Boosting - Optimized")
+            base_model_name = selected_model.split(' - ')[0]  # Remove sufixos como "- Optimized"
+            pred_query = text("""
+                SELECT * FROM model_predictions 
+                WHERE model_name = :model_name 
+                   OR model_name = :base_name
+                   OR model_name LIKE :pattern 
+                ORDER BY created_at DESC 
+                LIMIT 100
+            """)
+            predictions_df = pd.read_sql(pred_query, engine, params={
+                'model_name': selected_model, 
+                'base_name': base_model_name,
+                'pattern': f'{base_model_name}%'
+            })
             
             if not predictions_df.empty:
                 st.dataframe(predictions_df, use_container_width=True)
