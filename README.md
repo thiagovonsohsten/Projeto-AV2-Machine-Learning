@@ -247,6 +247,11 @@ docker-compose up -d
 - Documentação MLFlow: https://mlflow.org/
 - Documentação MinIO: https://min.io/docs/
 
+## 📄 Relatório Técnico
+
+O relatório técnico completo do projeto está disponível em:
+- [Relatório Técnico - Google Docs](https://docs.google.com/document/d/1rsSdgdTpLUZfI8Fn3ltTxJKA-Mo7qrXUHiUGJ9udkIY/edit?usp=sharing)
+
 ## 👥 Equipe
 
 - Thiago von Sohsten (@thiagovonsohsten)
